@@ -1,0 +1,35 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v3.3.0
+    hooks:
+      - id: check-json
+      - id: check-yaml
+      - id: check-toml
+      - id: debug-statements
+      - id: trailing-whitespace
+        exclude: ^gui\.py
+      - id: end-of-file-fixer
+        exclude: ^gui\.py
+      - id: mixed-line-ending
+      - id: requirements-txt-fixer
+  - repo: https://github.com/PyCQA/isort
+    rev: 5.6.4
+    hooks:
+      - id: isort
+        exclude: ^gui\.py
+        language_version: python3
+  - repo: https://gitlab.com/pycqa/flake8
+    rev: 3.8.4
+    hooks:
+      - id: flake8
+        exclude: ^gui\.py
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: 'v0.790'
+    hooks:
+      - id: mypy
+        additional_dependencies:
+          - wxPython==4.1.1
+          - opencv-python==4.5.1.48
+          - scikit-image==0.18.1
+          - numpy==1.19.4
+          - genutility==0.0.66

@@ -1,19 +1,18 @@
-from __future__ import absolute_import, division, print_function
-import logging, math, os.path
+from __future__ import generator_stop
 
-try:
-	from contextlib import suppress
-except ImportError:
-	from contextlib2 import suppress # backport
+import logging
+import os.path
+from contextlib import suppress
 
-import wx, cv2, numpy
+import cv2
+import numpy as np
+import wx
+from genutility.cv import grayscale, wx_to_cv_image
+from genutility.geometry import perspective_rectangle_aspect_ratio
+from genutility.math import limit
+from genutility.numpy import remove_color
 from skimage.filters import rank
 from skimage.morphology import disk
-
-from genutility.math import limit
-from genutility.geometry import perspective_rectangle_aspect_ratio
-from genutility.numpy import remove_color
-from genutility.cv import wx_to_cv_image, grayscale
 
 from gui import WarpFrame
 
@@ -27,7 +26,9 @@ def Normalize(cvimg):
 	"""# create a CLAHE object (Arguments are optional).
 	7 clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
 	8 cl1 = clahe.apply(img)"""
-	assert(cvimg.dtype == numpy.uint8)
+	if cvimg.dtype != np.uint8:
+		raise ValueError("cvimg must be int valued image")
+
 	return cv2.equalizeHist(cvimg)
 
 class ThresholdMode:
@@ -58,7 +59,7 @@ def guess_corners(img):
 		# can assume that we have found our screen
 		if len(approx) == 4:
 			return approx # already sorted by size, so return first found result
-			break 
+			break
 
 	return None
 
@@ -91,7 +92,7 @@ class Dewarp(WarpFrame):
 		self.dc.SetBrush(wx.Brush(None, wx.TRANSPARENT))
 		#self.sb = self.CreateStatusBar() #calls OnSize
 
-		self.LoadFile("Examples/uni.jpg") #uni.jpg, Focal Length: 5.1 mm
+		# self.LoadFile("Examples/uni.jpg") #uni.jpg, Focal Length: 5.1 mm
 
 	def LoadFile(self, path):
 		self.filename = path
@@ -215,16 +216,19 @@ class Dewarp(WarpFrame):
 	def Warp(self, outwidth, outheight, flags=cv2.INTER_CUBIC):
 		"""flags: opencv warpPerspective flags: cv2.INTER_LINEAR, cv2.INTER_CUBIC"""
 
-		assert len(self.points) == 4
-		assert outwidth > 0 and outheight > 0
+		if len(self.points) != 4:
+			raise RuntimeError("4 points are needed")
+
+		if outwidth <= 0 or outheight <= 0:
+			raise ValueError("width and heigh must be larger than 0")
 
 		#conert wx image (RGB) to opencv image (BGR)
 		imagesrc = wx_to_cv_image(self.image)
 
 		#corners of subimage
-		pointssrc = numpy.array(self.transform_points(self.points, self.widthfactor, self.heighfactor), numpy.float32)
+		pointssrc = np.array(self.transform_points(self.points, self.widthfactor, self.heighfactor), np.float32)
 		#coordinates of output
-		pointsdst = numpy.array([[0, 0], [outwidth, 0], [outwidth, outheight], [0, outheight]], numpy.float32)
+		pointsdst = np.array([[0, 0], [outwidth, 0], [outwidth, outheight], [0, outheight]], np.float32)
 
 		#find aspect ratio
 		principal_point = (self.image.Width / 2, self.image.Height / 2)
