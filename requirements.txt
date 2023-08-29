@@ -1,3 +1,4 @@
+doxapy>=0.9.1
 genutility
 numpy
 opencv-python
